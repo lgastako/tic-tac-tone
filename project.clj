@@ -1,4 +1,4 @@
-(defproject tic-tac-tone "0.1.0-SNAPSHOT"
+(defproject tic-tac-tone "0.1.0"
   :description "Tic-Tac-Toe for the Launchpad S via Overtone."
   :url "http://github.com/lgastako/tic-tac-tone"
   :license {:name "Public Domain"
