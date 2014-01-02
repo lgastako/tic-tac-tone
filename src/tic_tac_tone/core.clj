@@ -1,8 +1,8 @@
 (ns tic-tac-tone.core
   (:use [launchtone.core :only [make-app set-board! on-button]]
-        [launchtone.utils :only [debug set-level! enumerate]]))
+        [launchtone.utils :only [debug set-level!]]))
 
-(set-level! :debug)
+;;(set-level! :debug)
 
 (def empty-spots
   [:e :e :e
@@ -46,9 +46,6 @@
 
 (defn valid-move?
   [app spot]
-  (debug "valid-move?")
-  (debug "spots " (@app :spots))
-  (debug "spot " spot)
   (let [spots (@app :spots)]
     (if spot
       (= (spots spot) :e)
@@ -64,15 +61,10 @@
 
 (defn move
   [spot]
-  (debug "outer move")
   (fn [app]
-    (debug "inner move")
     (let [spots (app :spots)
           player (app :turn)
           new-spots (assoc spots spot player)]
-      (debug "spots " spots)
-      (debug "player " player)
-      (debug "new-spots " new-spots)
       (assoc app
         :spots new-spots
         :turn (other-player player)
@@ -80,7 +72,6 @@
 
 (defn make-move!
   [app spot]
-  (debug "make-move! " spot)
   (swap! app (move spot)))
 
 (defn board-full?
@@ -110,7 +101,6 @@
 
 (defn game-over?
   [app]
-  (debug "game-over?")
   (let [spots (@app :spots)
         winner (winner spots)]
     (or (board-full? app)
@@ -129,19 +119,12 @@
 
 (defn handle-move
   [app]
-  (debug "handle-move")
   (fn [row col event-type m]
-    (debug "handle-move details " row " " col)
     (if (game-over? app)
-      (do
-        (debug "game over")
-        (start-game! app))
+      (start-game! app)
       (let [player (@app :turn)]
-        (debug "player " player)
         (let [spot (which-spot row col)]
-          (debug "spot " spot)
           (when (valid-move? app spot)
-            (debug "valid move!")
             (make-move! app spot)))))))
 
 (defn -main []
