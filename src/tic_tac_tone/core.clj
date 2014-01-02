@@ -3,7 +3,7 @@
         [launchtone.cron :only [after]]
         [launchtone.utils :only [debug set-level!]]))
 
-;; (set-level! :debug)
+;;(set-level! :debug)
 
 (def empty-spots
   [:e :e :e
@@ -160,7 +160,9 @@
 
 (defn flash-draw!
   [app]
-  (debug "flashing a draw."))
+  (let [board (@app :board)]
+    (flash-winner! app :y (range 9))
+    (after app 1500 #(set-board! app board))))
 
 (defn show-winner!
   [app]
