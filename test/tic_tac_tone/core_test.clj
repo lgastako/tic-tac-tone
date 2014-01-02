@@ -2,33 +2,37 @@
   (:require [clojure.test :refer :all]
             [tic-tac-tone.core :refer :all]))
 
-;; I'll add tests when I feel I need them, until then, please enjoy The
-;; Daffodils, a poem by William Wordsworth:
+(deftest test-which-spot
+  (testing "Mapping row/col to tic-tac-toe spot"
+    (is (= 2 (which-spot 0 6)))))
 
-;; I wandered lonely as a cloud
-;;    That floats on high o'er vales and hills,
-;; When all at once I saw a crowd,
-;;    A host, of golden daffodils;
-;; Beside the lake, beneath the trees,
-;; Fluttering and dancing in the breeze.
+(deftest test-empty-board
+  (testing "Empty board layout"
+    (is (= empty-board
+           [[:e :e :y :e :e :y :e :e]
+            [:e :e :y :e :e :y :e :e]
+            [:y :y :y :y :y :y :y :y]
+            [:e :e :y :e :e :y :e :e]
+            [:e :e :y :e :e :y :e :e]
+            [:y :y :y :y :y :y :y :y]
+            [:e :e :y :e :e :y :e :e]
+            [:e :e :y :e :e :y :e :e]]))))
 
-;; Continuous as the stars that shine
-;;    And twinkle on the Milky Way,
-;; They stretched in never-ending line
-;;    Along the margin of a bay:
-;; Ten thousand saw I at a glance,
-;; Tossing their heads in sprightly dance.
+(deftest test-valid-move
+  (testing "Valid moves"
+    (is (valid-move? (atom {:spots [:e :e :e
+                                    :e :e :e
+                                    :e :e :e]}) 1))))
 
-;; The waves beside them danced, but they
-;;    Out-did the sparkling waves in glee:
-;; A Poet could not but be gay,
-;;    In such a jocund company:
-;; I gazed—and gazed—but little thought
-;; What wealth the show to me had brought:
+(deftest test-spots-full?
+  (testing "Check if spots are full"
+    (is (spots-full? (atom {:spots [:g :g :r
+                                    :r :g :g
+                                    :g :r :r]})))
+    (is (not (spots-full? (atom {:spots [:g :g :r
+                                         :r :g :g
+                                         :g :r :e]}))))))
 
-;; For oft, when on my couch I lie
-;;    In vacant or in pensive mood,
-;; They flash upon that inward eye
-;;    Which is the bliss of solitude;
-;; And then my heart with pleasure fills,
-;; And dances with the daffodils.
+(def test-find-win
+  (testing "Finding a winner"
+    (is (= ))))

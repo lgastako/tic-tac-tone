@@ -5,4 +5,4 @@
             :url "http://creativecommons.org/publicdomain/zero/1.0/"}
   :main ^:skip-aot tic-tac-tone.core
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [launchtone "0.1.0"]])
+                 [launchtone "0.2.0-SNAPSHOT"]])

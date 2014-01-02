@@ -1,8 +1,9 @@
 (ns tic-tac-tone.core
   (:use [launchtone.core :only [make-app set-board! on-button]]
+        [launchtone.cron :only [after]]
         [launchtone.utils :only [debug set-level!]]))
 
-;;(set-level! :debug)
+;; (set-level! :debug)
 
 (def empty-spots
   [:e :e :e
@@ -32,28 +33,12 @@
 
 (def empty-board (spots->board empty-spots))
 
-(assert (= empty-board
-           [[:e :e :y :e :e :y :e :e]
-            [:e :e :y :e :e :y :e :e]
-            [:y :y :y :y :y :y :y :y]
-            [:e :e :y :e :e :y :e :e]
-            [:e :e :y :e :e :y :e :e]
-            [:y :y :y :y :y :y :y :y]
-            [:e :e :y :e :e :y :e :e]
-            [:e :e :y :e :e :y :e :e]]))
-
-(assert (= 2 (which-spot 0 6)))
-
 (defn valid-move?
   [app spot]
   (let [spots (@app :spots)]
     (if spot
       (= (spots spot) :e)
       false)))
-
-(assert (valid-move? (atom {:spots [:e :e :e
-                                    :e :e :e
-                                    :e :e :e]}) 1))
 
 (defn other-player
   [player]
@@ -74,23 +59,29 @@
   [app spot]
   (swap! app (move spot)))
 
-(defn board-full?
+(defn spots-full?
   [app]
   (let [spots (@app :spots)]
     (= 0 (count (filter #(= % :e) (flatten spots))))))
 
 (defn find-win
   [player spots]
-  (let [winning-combos [[[0 0] [0 1] [0 2]]
-                        [[1 0] [1 1] [1 2]]
-                        [[2 0] [2 1] [2 2]]
-                        [[0 0] [1 0] [2 0]]
-                        [[0 1] [1 1] [2 1]]
-                        [[0 2] [1 2] [2 2]]
-                        [[0 0] [1 1] [2 2]]
-                        [[0 2] [1 1] [2 0]]]]
-    (let [tfs (map (fn [line] (map (fn [[r c]] (= player ((spots r) c))) line)) winning-combos)]
-      (pos? (count  (filter #(= % [true true true]) tfs))))))
+  (let [winning-combos [[0 1 2]
+                        [3 4 5]
+                        [6 7 8]
+                        [0 3 6]
+                        [1 4 7]
+                        [2 5 8]
+                        [0 4 8]
+                        [2 4 6]]]
+    (let [ts (map (fn [line]
+                    (map (fn [spot]
+                           (= player (spots spot)))
+                         line))
+                  winning-combos)
+          index (.indexOf ts [true true true])]
+      (when (not= index -1)
+        (winning-combos index)))))
 
 (defn winner
   [spots]
@@ -103,7 +94,7 @@
   [app]
   (let [spots (@app :spots)
         winner (winner spots)]
-    (or (board-full? app)
+    (or (spots-full? app)
         winner)))
 
 (defn reset-board!
@@ -117,6 +108,68 @@
                 :spots empty-spots))
   (reset-board! app))
 
+(defn rcs-of
+  [positions]
+  ;; TODO: Elegantize
+  (let [mapping {0 [[0 0] [0 1]
+                    [1 0] [1 1]]
+                 1 [[0 3] [0 4]
+                    [1 3] [1 4]]
+                 2 [[0 6] [0 7]
+                    [1 6] [1 7]]
+                 3 [[3 0] [3 1]
+                    [4 0] [4 1]]
+                 4 [[3 3] [3 4]
+                    [4 3] [4 4]]
+                 5 [[3 6] [3 7]
+                    [4 6] [4 7]]
+                 6 [[6 0] [6 1]
+                    [7 0] [7 1]]
+                 7 [[6 3] [6 4]
+                    [7 3] [7 4]]
+                 8 [[6 6] [6 7]
+                    [7 6] [7 7]]}]
+    (apply concat (map #(mapping %) positions))))
+
+(defn rec-assoc
+  [board rcs player]
+  (if (not (pos? (count rcs)))
+    board
+    (let [[r c] (first rcs)]
+      (recur (assoc-in board [r c] player)
+             (rest rcs)
+             player))))
+
+(defn set-positions!
+  [app positions player]
+  (let [board (@app :board)]
+    (let [rcs (rcs-of positions)]
+      (let [new-board (rec-assoc board rcs player)]
+        (set-board! app new-board)))))
+
+(defn flash-winner!
+  [app player positions]
+  (let [t-dur 500
+        off-dur 250]
+                                        (set-positions! app positions :e)
+    (after app off-dur                 #(set-positions! app positions player))
+    (after app t-dur                   #(set-positions! app positions :e))
+    (after app (+ off-dur t-dur)       #(set-positions! app positions player))
+    (after app (* 2 t-dur)             #(set-positions! app positions :e))
+    (after app (+ off-dur (* 2 t-dur)) #(set-positions! app positions player))))
+
+(defn flash-draw!
+  [app]
+  (debug "flashing a draw."))
+
+(defn show-winner!
+  [app]
+  (if-let [win-positions (find-win :r (@app :spots))]
+    (flash-winner! app :r win-positions)
+    (if-let [win-positions (find-win :g (@app :spots))]
+      (flash-winner! app :g win-positions)
+      (flash-draw! app))))
+
 (defn handle-move
   [app]
   (fn [row col event-type m]
@@ -125,7 +178,9 @@
       (let [player (@app :turn)]
         (let [spot (which-spot row col)]
           (when (valid-move? app spot)
-            (make-move! app spot)))))))
+            (make-move! app spot)
+            (when (game-over? app)
+              (show-winner! app))))))))
 
 (defn -main []
   (let [app (make-app)]
