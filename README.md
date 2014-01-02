@@ -4,7 +4,7 @@ Tic-tac-tone for the Launchpad S via Clojure + Overtone.
 
 ## Usage
 
-   lein run
+    lein run
 
 ## License
 
